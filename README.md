@@ -13,7 +13,7 @@
 ## 作者申明
 
 - 撰写本文的初衷在于传播知识，为感兴趣的读者提供参考素材。
-- 禁止将本文放在其他网站上供人下载，唯一下载网站为[https://xinychen.github.io/books/tensor_book.pdf](https://xinychen.github.io/books/tensor_book.pdf)。
+- 禁止将本文放在其他网站上，唯一下载网址为[https://xinychen.github.io/books/tensor_book.pdf](https://xinychen.github.io/books/tensor_book.pdf)。
 - 禁止将本文用于任何形式的商业活动。
 
 <h2 align="center">Kronecker分解</h2>
