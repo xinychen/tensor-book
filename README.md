@@ -6,11 +6,54 @@
 
 <h6 align="center">Made by Xinyu Chen • :globe_with_meridians: <a href="https://xinychen.github.io">https://xinychen.github.io</a></h6>
 
-**目录**
+## 目录
 
 - Kronecker分解
+
+## 作者申明
+
+- 撰写本文的初衷在于传播知识，为感兴趣的读者提供参考素材。
+- 禁止将本文放在其他网站上供人下载，唯一下载网站为[https://xinychen.github.io/books/tensor_book.pdf](https://xinychen.github.io/books/tensor_book.pdf)。
+- 禁止将本文用于任何形式的商业活动。
 
 <h2 align="center">Kronecker分解</h2>
 <p align="right"><a href="#从线性代数到张量分解"><sup>▴ 回到顶部</sup></a></p>
 
-【例】给定矩阵$\boldsymbol{A}=\begin{bmatrix} 1 & 2 \\ 3 & 4 \\ \end{bmatrix}$与$\boldsymbol{B}=\begin{bmatrix} 5 & 6 & 7 \\ 8 & 9 & 10 \\ \end{bmatrix}$，试写出两者之间的Kronecker积$\boldsymbol{X}=\boldsymbol{A}\otimes\boldsymbol{B}$，并求Kronecker分解$\displaystyle\hat{\boldsymbol{A}},\hat{\boldsymbol{B}}=\argmin_{\boldsymbol{A},\boldsymbol{B}}~\|\boldsymbol{X}-\boldsymbol{A}\otimes\boldsymbol{B}\|_{F}^{2}$。
+**例.** 计算Kronecker积并求Kronecker分解。
+
+- 计算Kronecker积
+
+```python
+import numpy as np
+
+A = np.array([[1, 2], [3, 4]])
+B = np.array([[5, 6, 7], [8, 9, 10]])
+X = np.kron(A, B)
+print('X = ')
+print(X)
+```
+
+- 求Kronecker分解
+
+```python
+def permute(mat, A_dim1, A_dim2, B_dim1, B_dim2):
+    ans = np.zeros((A_dim1 * A_dim2, B_dim1 * B_dim2))
+    for j in range(A_dim2):
+        for i in range(A_dim1):
+            ans[A_dim1 * j + i, :] = mat[i * B_dim1 : (i + 1) * B_dim1,
+                                         j * B_dim2 : (j + 1) * B_dim2].reshape(B_dim1 * B_dim2, order = 'F')
+    return ans
+
+X_tilde = permute(X, 2, 2, 2, 3)
+print('X_tilde = ')
+print(X_tilde)
+print()
+u, s, v = np.linalg.svd(X_tilde, full_matrices = False)
+A_hat = np.sqrt(s[0]) * u[:, 0].reshape(2, 2, order = 'F')
+B_hat = np.sqrt(s[0]) * v[0, :].reshape(2, 3, order = 'F')
+print('A_hat = ')
+print(A_hat)
+print()
+print('B_hat = ')
+print(B_hat)
+```
