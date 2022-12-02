@@ -16,6 +16,29 @@
 - 禁止将本文放在其他网站上，唯一下载网址为[https://xinychen.github.io/books/tensor_book.pdf](https://xinychen.github.io/books/tensor_book.pdf)。
 - 禁止将本文用于任何形式的商业活动。
 
+<h2 align="center">代数结构</h2>
+<p align="right"><a href="#从线性代数到张量分解"><sup>▴ 回到顶部</sup></a></p>
+
+**例.** 写出张量的lateral切片与horizontal切片。
+
+```python
+import numpy as np
+
+x = np.zeros((2, 2, 2))
+x[:, :, 0] = np.array([[1, 2], [3, 4]])
+x[:, :, 1] = np.array([[5, 6], [7, 8]])
+print('lateral slices:')
+print(x[:, 0, :])
+print()
+print(x[:, 1, :])
+print()
+print('horizonal slices:')
+print(x[0, :, :])
+print()
+print(x[1, :, :])
+print()
+```
+
 <h2 align="center">Kronecker分解</h2>
 <p align="right"><a href="#从线性代数到张量分解"><sup>▴ 回到顶部</sup></a></p>
 
