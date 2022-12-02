@@ -87,7 +87,7 @@ print('B_hat = ')
 print(B_hat)
 ```
 
-<h2 align="center">Kronecker分解与Kronecker分解</h2>
+<h2 align="center">模态积与Tucker张量分解</h2>
 <p align="right"><a href="#从线性代数到张量分解"><sup>▴ 回到顶部</sup></a></p>
 
 **例.** 计算张量与矩阵的模态积。
