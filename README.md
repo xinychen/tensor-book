@@ -30,22 +30,22 @@
 ```python
 import numpy as np
 
-x = np.zeros((2, 2, 2))
-x[:, :, 0] = np.array([[1, 2], [3, 4]])
-x[:, :, 1] = np.array([[5, 6], [7, 8]])
+X = np.zeros((2, 2, 2))
+X[:, :, 0] = np.array([[1, 2], [3, 4]])
+X[:, :, 1] = np.array([[5, 6], [7, 8]])
 print('lateral slices:')
-print(x[:, 0, :])
+print(X[:, 0, :])
 print()
-print(x[:, 1, :])
+print(X[:, 1, :])
 print()
 print('horizonal slices:')
-print(x[0, :, :])
+print(X[0, :, :])
 print()
-print(x[1, :, :])
+print(X[1, :, :])
 print()
 ```
 
-<h2 align="center">Kronecker分解</h2>
+<h2 align="center">Kronecker分解与Kronecker分解</h2>
 <p align="right"><a href="#从线性代数到张量分解"><sup>▴ 回到顶部</sup></a></p>
 
 **例.** 计算Kronecker积并求Kronecker分解。
@@ -85,4 +85,24 @@ print(A_hat)
 print()
 print('B_hat = ')
 print(B_hat)
+```
+
+<h2 align="center">Kronecker分解与Kronecker分解</h2>
+<p align="right"><a href="#从线性代数到张量分解"><sup>▴ 回到顶部</sup></a></p>
+
+**例.** 计算张量与矩阵的模态积。
+
+```python
+import numpy as np
+
+X = np.zeros((2, 2, 2))
+X[:, :, 0] = np.array([[1, 2], [3, 4]])
+X[:, :, 1] = np.array([[5, 6], [7, 8]])
+A = np.array([[1, 2], [3, 4], [5, 6]])
+Y = np.einsum('ijh, ki -> kjh', X, A)
+print('frontal slices of Y:')
+print(Y[:, :, 0])
+print()
+print(Y[:, :, 1])
+print()
 ```
