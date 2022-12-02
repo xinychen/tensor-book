@@ -4,11 +4,17 @@
 ![Python 3.7](https://img.shields.io/badge/Python-3.7-blue.svg)
 [![GitHub stars](https://img.shields.io/github/stars/xinychen/tensor-book.svg?logo=github&label=Stars&logoColor=white)](https://github.com/xinychen/tensor-book)
 
-<h6 align="center">Made by Xinyu Chen • :globe_with_meridians: <a href="https://xinychen.github.io">https://xinychen.github.io</a></h6>
+<h6 align="center">Made by Xinyu Chen (陈新宇) • :globe_with_meridians: <a href="https://xinychen.github.io">https://xinychen.github.io</a></h6>
 
 ## 目录
 
-- Kronecker分解
+- **Kronecker积与Kronecker分解**
+  - Kronecker积定义
+  - Kronecker积基本性质
+  - Kronecker积特殊性质
+  - 朴素Kronecker积分解
+  - 广义Kronecker积分解
+  - 模型参数压缩问题
 
 ## 作者申明
 
