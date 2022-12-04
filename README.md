@@ -175,6 +175,21 @@ print()
 <h2 align="center">低秩时序模型</h2>
 <p align="right"><a href="#从线性代数到张量分解"><sup>▴ 回到顶部</sup></a></p>
 
+
+**例.** 根据卷积定理计算循环卷积。
+
+```python
+import numpy as np
+
+x = np.array([0, 1, 2, 3, 4])
+y = np.array([2, -1, 3])
+fx = np.fft.fft(x)
+fy = np.fft.fft(np.append(y, np.zeros(2), axis = 0))
+z = np.fft.ifft(fx * fy).real
+```
+
+**例.** 使用低秩拉普拉斯卷积模型对灰度图像进行重构。
+
 ```python
 import numpy as np
 
