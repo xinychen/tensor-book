@@ -200,6 +200,19 @@ fz = np.fft.fft(z)
 y = np.fft.ifft(fz / fx).real
 ```
 
+**例.** 根据卷积定理计算二维循环卷积。
+
+```python
+import numpy as np
+
+X = np.array([[1, 2, 3, 4], [4, 5, 6, 7], 
+              [7, 8, 9, 10], [10, 11, 12, 13]])
+K = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+pad_K = np.zeros(X.shape)
+pad_K[: K.shape[0], : K.shape[1]] = K
+Y = np.fft.ifft2(np.fft.fft2(X) * np.fft.fft2(pad_K)).real
+```
+
 **例.** 使用低秩拉普拉斯卷积模型对灰度图像进行重构。
 
 ```python
