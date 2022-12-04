@@ -87,6 +87,71 @@ print('B_hat = ')
 print(B_hat)
 ```
 
+**例.** 采用广义 Kronecker 分解重构灰度图像。
+
+```python
+import numpy as np
+
+def permute(mat, A_dim1, A_dim2, B_dim1, B_dim2):
+    ans = np.zeros((A_dim1 * A_dim2, B_dim1 * B_dim2))
+    for j in range(A_dim2):
+        for i in range(A_dim1):
+            ans[A_dim1 * j + i, :] = mat[i * B_dim1 : (i + 1) * B_dim1,
+                                         j * B_dim2 : (j + 1) * B_dim2].reshape(B_dim1 * B_dim2, order = 'F')
+    return ans
+
+def kron_decomp(mat, A_dim1, A_dim2, B_dim1, B_dim2, rank):
+    mat_tilde = permute(mat, A_dim1, A_dim2, B_dim1, B_dim2)
+    u, s, v = np.linalg.svd(mat_tilde, full_matrices = False)
+    A_hat = np.zeros((A_dim1, A_dim2, rank))
+    B_hat = np.zeros((B_dim1, B_dim2, rank))
+    for r in range(rank):
+        A_hat[:, :, r] = np.sqrt(s[r]) * u[:, r].reshape([A_dim1, A_dim2], order = 'F')
+        B_hat[:, :, r] = np.sqrt(s[r]) * v[r, :].reshape([B_dim1, B_dim2], order = 'F')
+    mat_hat = np.zeros(mat.shape)
+    for r in range(rank):
+        mat_hat += np.kron(A_hat[:, :, r], B_hat[:, :, r])
+    return mat_hat
+```
+
+```python
+from skimage import color
+from skimage import io
+
+img = io.imread('data/gaint_panda.bmp')
+imgGray = color.rgb2gray(img)
+
+io.imshow(imgGray)
+plt.axis('off')
+plt.imsave('gaint_panda_gray.png', imgGray, cmap = plt.cm.gray)
+plt.show()
+```
+
+```python
+import imageio
+import matplotlib.pyplot as plt
+
+img = io.imread('data/gaint_panda.bmp')
+mat = color.rgb2gray(img)
+io.imshow(mat)
+plt.axis('off')
+plt.show()
+
+A_dim1 = 16
+A_dim2 = 32
+B_dim1 = 32
+B_dim2 = 16
+for rank in [5, 10, 50, 100]:
+    mat_hat = kron_decomp(mat, A_dim1, A_dim2, B_dim1, B_dim2, rank)
+    mat_hat[mat_hat > 1] = 1
+    mat_hat[mat_hat < 0] = 0
+    io.imshow(mat_hat)
+    plt.axis('off')
+    plt.imsave('gaint_panda_gray_R{}.png'.format(rank), 
+              mat_hat, cmap = plt.cm.gray)
+    plt.show()
+```
+
 <h2 align="center">模态积与Tucker张量分解</h2>
 <p align="right"><a href="#从线性代数到张量分解"><sup>▴ 回到顶部</sup></a></p>
 
