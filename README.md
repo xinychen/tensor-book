@@ -188,6 +188,18 @@ fy = np.fft.fft(np.append(y, np.zeros(2), axis = 0))
 z = np.fft.ifft(fx * fy).real
 ```
 
+**例.** 根据卷积定理计算向量**y**。
+
+```python
+import numpy as np
+
+x = np.array([0, 1, 2, 3, 4])
+z = np.array([5, 14, 3, 7, 11])
+fx = np.fft.fft(x)
+fz = np.fft.fft(z)
+y = np.fft.ifft(fz / fx).real
+```
+
 **例.** 使用低秩拉普拉斯卷积模型对灰度图像进行重构。
 
 ```python
