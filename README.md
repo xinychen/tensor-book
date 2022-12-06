@@ -292,7 +292,98 @@ plt.imsave('gaint_panda_gray_recovery_90_circ_nnm.png',
 plt.show()
 ```
 
-**例.** 使用低秩拉普拉斯卷积模型对灰度图像进行复原。
+**例.** 使用一维低秩拉普拉斯卷积模型对灰度图像进行复原。
+
+```python
+import numpy as np
+
+def compute_rse(var, var_hat):
+    return np.linalg.norm(var - var_hat, 2) / np.linalg.norm(var, 2)
+
+def laplacian(n, tau):
+    ell = np.zeros(n)
+    ell[0] = 2 * tau
+    for k in range(tau):
+        ell[k + 1] = -1
+        ell[-k - 1] = -1
+    return ell
+
+def prox(z, w, lmbda, denominator):
+    T = z.shape[0]
+    temp = np.fft.fft(lmbda * z - w) / denominator
+    temp1 = 1 - T / (lmbda * np.abs(temp))
+    temp1[temp1 <= 0] = 0
+    return np.fft.ifft(temp * temp1).real
+
+def update_z(y_train, pos_train, x, w, lmbda, eta):
+    z = x + w / lmbda
+    z[pos_train] = (lmbda / (lmbda + eta) * z[pos_train] 
+                    + eta / (lmbda + eta) * y_train)
+    return z
+
+def update_w(x, z, w, lmbda):
+    return w + lmbda * (x - z)
+
+def lap_conv_1d(y_true, y, gamma, lmbda, eta, tau, maxiter = 50):
+    T = y.shape
+    pos_train = np.where(y != 0)
+    y_train = y[pos_train]
+    pos_test = np.where((y_true != 0) & (y == 0))
+    y_test = y_true[pos_test]
+    z = y.copy()
+    w = y.copy()
+    denominator = lmbda + gamma * np.fft.fft(laplacian(T, tau)) ** 2
+    del y_true, y
+    show_iter = 10
+    for it in range(maxiter):
+        x = prox(z, w, lmbda, denominator)
+        z = update_z(y_train, pos_train, x, w, lmbda, eta)
+        w = update_w(x, z, w, lmbda)
+        if (it + 1) % show_iter == 0:
+            print(it + 1)
+            print(compute_rse(y_test, x[pos_test]))
+            print()
+    return x
+```
+
+```python
+import numpy as np
+np.random.seed(1)
+import matplotlib.pyplot as plt
+from skimage import color
+from skimage import io
+
+img = io.imread('data/gaint_panda.bmp')
+imgGray = color.rgb2gray(img)
+M, N = imgGray.shape
+missing_rate = 0.9
+
+sparse_img = imgGray * np.round(np.random.rand(M, N) + 0.5 - missing_rate)
+io.imshow(sparse_img)
+plt.axis('off')
+plt.show()
+```
+
+```python
+lmbda = 5e-3 * M * N
+gamma = 1 * lmbda
+eta = 100 * lmbda
+tau = 1
+maxiter = 100
+vec_hat = lap_conv_1d(imgGray.reshape(M * N, order = 'F'), 
+                      sparse_img.reshape(M * N, order = 'F'), 
+                      gamma, lmbda, eta, tau, maxiter)
+
+vec_hat[vec_hat < 0] = 0
+vec_hat[vec_hat > 1] = 1
+io.imshow(vec_hat.reshape([M, N], order = 'F'))
+plt.axis('off')
+plt.imsave('gaint_panda_gray_recovery_90_lap_conv_1d.png', 
+           vec_hat.reshape([M, N], order = 'F'), cmap = plt.cm.gray)
+plt.show()
+```
+
+**例.** 使用二维低秩拉普拉斯卷积模型对灰度图像进行复原。
 
 ```python
 import numpy as np
