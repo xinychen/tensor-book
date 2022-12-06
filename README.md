@@ -175,6 +175,132 @@ print()
 <h2 align="center">低秩时序模型</h2>
 <p align="right"><a href="#从线性代数到张量分解"><sup>▴ 回到顶部</sup></a></p>
 
+**例.** 使用考虑平滑处理的矩阵分解对灰度图像进行复原。
+
+```python
+import numpy as np
+
+def compute_rse(var, var_hat):
+    return np.linalg.norm(var - var_hat, 2) / np.linalg.norm(var, 2)
+
+def generate_Psi(n):
+    mat1 = np.append(np.zeros((n - 1, 1)), np.eye(n - 1), axis = 1)
+    mat2 = np.append(np.eye(n - 1), np.zeros((n - 1, 1)), axis = 1)
+    Psi = mat1 - mat2
+    return Psi
+
+def update_cg(var, r, q, Aq, rold):
+    alpha = rold / np.inner(q, Aq)
+    var = var + alpha * q
+    r = r - alpha * Aq
+    rnew = np.inner(r, r)
+    q = r + (rnew / rold) * q
+    return var, r, q, rnew
+
+def ell_w(ind, W, X, Psi1, rho, lmbda):
+    return X @ ((W.T @ X) * ind).T + rho * W + lmbda * W @ Psi1.T @ Psi1
+
+def conj_grad_w(sparse_mat, ind, W, X, Psi1, rho, lmbda, maxiter = 5):
+    rank, dim1 = W.shape
+    w = np.reshape(W, -1, order = 'F')
+    r = np.reshape(X @ sparse_mat.T 
+                   - ell_w(ind, W, X, Psi1, rho, lmbda), -1, order = 'F')
+    q = r.copy()
+    rold = np.inner(r, r)
+    for it in range(maxiter):
+        Q = np.reshape(q, (rank, dim1), order = 'F')
+        Aq = np.reshape(ell_w(ind, Q, X, Psi1, rho, lmbda), -1, order = 'F')
+        w, r, q, rold = update_cg(w, r, q, Aq, rold)
+    return np.reshape(w, (rank, dim1), order = 'F')
+
+def ell_x(ind, W, X, Psi2, rho, lmbda):
+    return W @ ((W.T @ X) * ind) + rho * X + lmbda * X @ Psi2.T @ Psi2
+
+def conj_grad_x(sparse_mat, ind, W, X, Psi2, rho, lmbda, maxiter = 5):
+    rank, dim2 = X.shape
+    x = np.reshape(X, -1, order = 'F')
+    r = np.reshape(W @ sparse_mat 
+                   - ell_x(ind, W, X, Psi2, rho, lmbda), -1, order = 'F')
+    q = r.copy()
+    rold = np.inner(r, r)
+    for it in range(maxiter):
+        Q = np.reshape(q, (rank, dim2), order = 'F')
+        Aq = np.reshape(ell_x(ind, W, Q, Psi2, rho, lmbda), -1, order = 'F')
+        x, r, q, rold = update_cg(x, r, q, Aq, rold)
+    return np.reshape(x, (rank, dim2), order = 'F')
+
+def smoothing_mf(dense_mat, sparse_mat, rank, rho, lmbda, maxiter = 50):
+    dim1, dim2 = sparse_mat.shape
+    W = 0.01 * np.random.randn(rank, dim1)
+    X = 0.01 * np.random.randn(rank, dim2)
+    ind = sparse_mat != 0
+    pos_test = np.where((dense_mat != 0) & (sparse_mat == 0))
+    dense_test = dense_mat[pos_test]
+    del dense_mat
+    Psi1 = generate_Psi(dim1)
+    Psi2 = generate_Psi(dim2)
+    show_iter = 10
+    for it in range(maxiter):
+        W = conj_grad_w(sparse_mat, ind, W, X, Psi1, rho, lmbda)
+        X = conj_grad_x(sparse_mat, ind, W, X, Psi2, rho, lmbda)
+        mat_hat = W.T @ X
+        if (it + 1) % show_iter == 0:
+            temp_hat = mat_hat[pos_test]
+            print('Iter: {}'.format(it + 1))
+            print(compute_rse(temp_hat, dense_test))
+            print()
+    return mat_hat, W, X
+```
+
+```python
+import numpy as np
+np.random.seed(1)
+import matplotlib.pyplot as plt
+from skimage import color
+from skimage import io
+
+img = io.imread('data/gaint_panda.bmp')
+imgGray = color.rgb2gray(img)
+M, N = imgGray.shape
+missing_rate = 0.9
+
+sparse_img = imgGray * np.round(np.random.rand(M, N) + 0.5 - missing_rate)
+io.imshow(sparse_img)
+plt.axis('off')
+plt.show()
+```
+
+```python
+lmbda = 1e+1
+for rank in [5, 10, 50]:
+    rho = 1e-1
+    maxiter = 100
+    mat_hat, W, X = smoothing_mf(imgGray, sparse_img, rank, rho, lmbda, maxiter)
+
+    mat_hat[mat_hat < 0] = 0
+    mat_hat[mat_hat > 1] = 1
+    io.imshow(mat_hat)
+    plt.axis('off')
+    plt.imsave('gaint_panda_gray_recovery_90_mf_rank_{}_lmbda_10.png'.format(rank), 
+              mat_hat, cmap = plt.cm.gray)
+    plt.show()
+```
+
+```python
+lmbda = 1e-10
+for rank in [5, 10, 50]:
+    rho = 1e-1
+    maxiter = 100
+    mat_hat, W, X = smoothing_mf(imgGray, sparse_img, rank, rho, lmbda, maxiter)
+
+    mat_hat[mat_hat < 0] = 0
+    mat_hat[mat_hat > 1] = 1
+    io.imshow(mat_hat)
+    plt.axis('off')
+    plt.imsave('gaint_panda_gray_recovery_90_mf_rank_{}_lmbda_0.png'.format(rank), 
+              mat_hat, cmap = plt.cm.gray)
+    plt.show()
+```
 
 **例.** 根据卷积定理计算循环卷积。
 
