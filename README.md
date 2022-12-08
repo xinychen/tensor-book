@@ -302,6 +302,124 @@ for rank in [5, 10, 50]:
     plt.show()
 ```
 
+**例.** 使用考虑空间自回归的矩阵分解对灰度图像进行复原。
+
+```python
+import numpy as np
+
+def compute_rse(var, var_hat):
+    return np.linalg.norm(var - var_hat, 2) / np.linalg.norm(var, 2)
+
+def generate_Psi(n):
+    mat1 = np.append(np.zeros((n - 1, 1)), np.eye(n - 1), axis = 1)
+    mat2 = np.append(np.eye(n - 1), np.zeros((n - 1, 1)), axis = 1)
+    return mat1, mat2
+
+def update_cg(var, r, q, Aq, rold):
+    alpha = rold / np.inner(q, Aq)
+    var = var + alpha * q
+    r = r - alpha * Aq
+    rnew = np.inner(r, r)
+    q = r + (rnew / rold) * q
+    return var, r, q, rnew
+
+def ell_w(ind, W, X, Aw, Phi0, Phi1, rho, lmbda):
+    temp1 = W @ Phi0.T - Aw @ W @ Phi1.T
+    temp2 = lmbda * temp1 @ Phi0 - lmbda * Aw.T @ temp1 @ Phi1
+    return X @ ((W.T @ X) * ind).T + rho * W + temp2
+
+def conj_grad_w(sparse_mat, ind, W, X, Aw, Phi0, Phi1, rho, lmbda, maxiter = 5):
+    rank, dim1 = W.shape
+    w = np.reshape(W, -1, order = 'F')
+    r = np.reshape(X @ sparse_mat.T 
+                   - ell_w(ind, W, X, Aw, Phi0, Phi1, rho, lmbda), -1, order = 'F')
+    q = r.copy()
+    rold = np.inner(r, r)
+    for it in range(maxiter):
+        Q = np.reshape(q, (rank, dim1), order = 'F')
+        Aq = np.reshape(ell_w(ind, Q, X, Aw, Phi0, Phi1, rho, lmbda), -1, order = 'F')
+        w, r, q, rold = update_cg(w, r, q, Aq, rold)
+    return np.reshape(w, (rank, dim1), order = 'F')
+
+def ell_x(ind, W, X, Ax, Psi0, Psi1, rho, lmbda):
+    temp1 = X @ Psi0.T - Ax @ X @ Psi1.T
+    temp2 = lmbda * temp1 @ Psi0 - lmbda * Ax.T @ temp1 @ Psi1
+    return W @ ((W.T @ X) * ind) + rho * X + temp2
+
+def conj_grad_x(sparse_mat, ind, W, X, Ax, Psi0, Psi1, rho, lmbda, maxiter = 5):
+    rank, dim2 = X.shape
+    x = np.reshape(X, -1, order = 'F')
+    r = np.reshape(W @ sparse_mat 
+                   - ell_x(ind, W, X, Ax, Psi0, Psi1, rho, lmbda), -1, order = 'F')
+    q = r.copy()
+    rold = np.inner(r, r)
+    for it in range(maxiter):
+        Q = np.reshape(q, (rank, dim2), order = 'F')
+        Aq = np.reshape(ell_x(ind, W, Q, Ax, Psi0, Psi1, rho, lmbda), -1, order = 'F')
+        x, r, q, rold = update_cg(x, r, q, Aq, rold)
+    return np.reshape(x, (rank, dim2), order = 'F')
+
+def spatial_autoregressive_mf(dense_mat, sparse_mat, rank, rho, lmbda, maxiter = 50):
+    dim1, dim2 = sparse_mat.shape
+    W = 0.01 * np.random.randn(rank, dim1)
+    X = 0.01 * np.random.randn(rank, dim2)
+    Aw = 0.01 * np.random.randn(rank, rank)
+    Ax = 0.01 * np.random.randn(rank, rank)
+    ind = sparse_mat != 0
+    pos_test = np.where((dense_mat != 0) & (sparse_mat == 0))
+    dense_test = dense_mat[pos_test]
+    del dense_mat
+    Phi0, Phi1 = generate_Psi(dim1)
+    Psi0, Psi1 = generate_Psi(dim2)
+    show_iter = 10
+    for it in range(maxiter):
+        W = conj_grad_w(sparse_mat, ind, W, X, Aw, Phi0, Phi1, rho, lmbda)
+        X = conj_grad_x(sparse_mat, ind, W, X, Ax, Psi0, Psi1, rho, lmbda)
+        Aw = W @ Phi0.T @ np.linalg.pinv(W @ Phi1.T)
+        Ax = X @ Psi0.T @ np.linalg.pinv(X @ Psi1.T)
+        mat_hat = W.T @ X
+        if (it + 1) % show_iter == 0:
+            temp_hat = mat_hat[pos_test]
+            print('Iter: {}'.format(it + 1))
+            print(compute_rse(temp_hat, dense_test))
+            print()
+    return mat_hat, W, X, Aw, Ax
+```
+
+```python
+import numpy as np
+np.random.seed(1)
+import matplotlib.pyplot as plt
+from skimage import color
+from skimage import io
+
+img = io.imread('data/gaint_panda.bmp')
+imgGray = color.rgb2gray(img)
+M, N = imgGray.shape
+missing_rate = 0.9
+
+sparse_img = imgGray * np.round(np.random.rand(M, N) + 0.5 - missing_rate)
+io.imshow(sparse_img)
+plt.axis('off')
+plt.show()
+```
+
+```python
+lmbda = 5e-1
+for rank in [5, 10, 50]:
+    rho = 1e-1
+    maxiter = 100
+    mat_hat, W, X, Aw, Ax = spatial_autoregressive_mf(imgGray, sparse_img, rank, rho, lmbda, maxiter)
+
+    mat_hat[mat_hat < 0] = 0
+    mat_hat[mat_hat > 1] = 1
+    io.imshow(mat_hat)
+    plt.axis('off')
+    plt.imsave('gaint_panda_gray_recovery_90_spatial_ar_mf_rank_{}.png'.format(rank), 
+              mat_hat, cmap = plt.cm.gray)
+    plt.show()
+```
+
 **例.** 根据卷积定理计算循环卷积。
 
 ```python
