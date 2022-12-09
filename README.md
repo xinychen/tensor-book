@@ -720,3 +720,31 @@ plt.imsave('gaint_panda_gray_recovery_90_gamm1_tau{}.png'.format(tau),
 plt.show()
 ```
 
+**例.** 计算延迟嵌入矩阵的奇异值分解、还原向量**x**。
+
+```python
+import numpy as np
+
+def delay_embedding(vec, kernel_size):
+    n = vec.shape[0]
+    mat = np.zeros((n, kernel_size))
+    mat[:, 0] = vec
+    for k in range(1, kernel_size):
+        mat[:, k] = np.append(vec[k :], vec[: k], axis = 0)
+    return mat
+
+vec = np.array([0, 1, 2, 3, 4])
+T = vec.shape[0]
+kernel_size = 3
+mat = delay_embedding(vec, kernel_size)
+
+u, s, v = np.linalg.svd(mat, full_matrices = False)
+x_hat = np.zeros(T)
+for r in range(kernel_size):
+    fu = np.fft.fft(u[:, r])
+    fv = np.fft.fft(np.append(v[r, :], np.zeros(T - kernel_size), axis = 0))
+    x_hat += s[r] * np.fft.ifft(fu * fv).real
+x_hat = x_hat / kernel_size
+print(x_hat)
+```
+
