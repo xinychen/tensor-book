@@ -536,6 +536,173 @@ plt.imsave('gaint_panda_gray_recovery_90_circ_nnm.png',
 plt.show()
 ```
 
+**例.** 使用一维低秩拉普拉斯卷积模型对车速时间序列进行重构。
+
+```python
+import numpy as np
+
+def compute_mape(var, var_hat):
+    return np.sum(np.abs(var - var_hat) / var) / var.shape[0]
+
+def compute_rmse(var, var_hat):
+    return np.sqrt(np.sum((var - var_hat) ** 2) / var.shape[0])
+
+def laplacian(n, tau):
+    ell = np.zeros(n)
+    ell[0] = 2 * tau
+    for k in range(tau):
+        ell[k + 1] = -1
+        ell[-k - 1] = -1
+    return ell
+
+def prox(z, w, lmbda, denominator):
+    T = z.shape[0]
+    temp = np.fft.fft(lmbda * z - w) / denominator
+    temp1 = np.abs(temp) - T / lmbda
+    temp1[temp1 <= 0] = 0
+    return np.fft.ifft(temp / np.abs(temp) * temp1).real
+
+def update_z(y_train, pos_train, x, w, lmbda, eta):
+    z = x + w / lmbda
+    z[pos_train] = (lmbda / (lmbda + eta) * z[pos_train] 
+                    + eta / (lmbda + eta) * y_train)
+    return z
+
+def update_w(x, z, w, lmbda):
+    return w + lmbda * (x - z)
+
+def LCR(y_true, y, lmbda, gamma, tau, maxiter = 50):
+    eta = 100 * lmbda
+    T = y.shape
+    pos_train = np.where(y != 0)
+    y_train = y[pos_train]
+    pos_test = np.where((y_true != 0) & (y == 0))
+    y_test = y_true[pos_test]
+    z = y.copy()
+    w = y.copy()
+    denominator = lmbda + gamma * np.fft.fft(laplacian(T, tau)) ** 2
+    del y_true, y
+    show_iter = 10
+    for it in range(maxiter):
+        x = prox(z, w, lmbda, denominator)
+        z = update_z(y_train, pos_train, x, w, lmbda, eta)
+        w = update_w(x, z, w, lmbda)
+        if (it + 1) % show_iter == 0:
+            print(it + 1)
+            print(compute_mape(y_test, x[pos_test]))
+            print(compute_rmse(y_test, x[pos_test]))
+            print()
+    return x
+```
+
+```python
+import numpy as np
+np.random.seed(1)
+import time
+
+missing_rate = 0.9
+print('Missing rate = {}'.format(missing_rate))
+
+dense_vec = np.load('sample_speed_time_series.npz')['arr_0']
+T = dense_vec.shape[0]
+sparse_vec = dense_vec * np.round(np.random.rand(T) + 0.5 - missing_rate)
+
+import time
+start = time.time()
+lmbda = 5e-3 * T
+gamma = 2 * lmbda
+tau = 2
+maxiter = 100
+x = LCR(dense_vec, sparse_vec, lmbda, gamma, tau, maxiter)
+end = time.time()
+print('Running time: %d seconds.'%(end - start))
+```
+
+```python
+import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size': 13})
+
+fig = plt.figure(figsize = (7.5, 2.2))
+ax = fig.add_subplot(111)
+plt.plot(dense_vec[: T], 'dodgerblue', linewidth = 2)
+plt.xlabel('Time')
+plt.ylabel('Speed (mph)')
+plt.xlim([0, T])
+plt.ylim([54, 65])
+plt.xticks(np.arange(0, T + 1, 24))
+plt.yticks(np.arange(54, 66, 2))
+plt.grid(linestyle = '-.', linewidth = 0.5)
+ax.tick_params(direction = 'in')
+
+plt.savefig('freeway_traffic_speed_obs.pdf', bbox_inches = "tight")
+plt.show()
+
+import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size': 13})
+
+fig = plt.figure(figsize = (7.5, 2.2))
+ax = fig.add_subplot(111)
+plt.plot(np.arange(0, T), sparse_vec[: T], 'o', 
+         markeredgecolor = 'darkblue', alpha = missing_rate,
+         markerfacecolor = 'deepskyblue', markersize = 10)
+plt.xlabel('Time')
+plt.ylabel('Speed (mph)')
+plt.xlim([0, T])
+plt.ylim([54, 65])
+plt.xticks(np.arange(0, T + 1, 24))
+plt.yticks(np.arange(54, 66, 2))
+plt.grid(linestyle = '-.', linewidth = 0.5)
+ax.tick_params(direction = 'in')
+
+plt.savefig('freeway_traffic_speed_partial_obs.pdf', bbox_inches = "tight")
+plt.show()
+
+import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size': 13})
+
+fig = plt.figure(figsize = (7.5, 2.2))
+ax = fig.add_subplot(111)
+plt.plot(np.arange(0, T), sparse_vec[: T], 'o', 
+         markeredgecolor = 'darkblue', alpha = missing_rate,
+         markerfacecolor = 'deepskyblue', markersize = 10)
+plt.plot(x[: T], 'red', linewidth = 4)
+plt.xlabel('Time')
+plt.ylabel('Speed (mph)')
+plt.xlim([0, T])
+plt.ylim([54, 65])
+plt.xticks(np.arange(0, T + 1, 24))
+plt.yticks(np.arange(54, 66, 2))
+plt.grid(linestyle = '-.', linewidth = 0.5)
+ax.tick_params(direction = 'in')
+
+plt.savefig('freeway_traffic_speed_reconstructed_lap_conv.pdf',
+           bbox_inches = "tight")
+plt.show()
+
+import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size': 13})
+
+fig = plt.figure(figsize = (7.5, 2.2))
+ax = fig.add_subplot(111)
+plt.plot(dense_vec[: T], 'dodgerblue', linewidth = 1.5)
+plt.plot(np.arange(0, T), sparse_vec[: T], 'o', 
+         markeredgecolor = 'darkblue', alpha = missing_rate,
+         markerfacecolor = 'deepskyblue', markersize = 10)
+plt.plot(x[: T], 'red', linewidth = 4)
+plt.xlabel('Time')
+plt.ylabel('Speed (mph)')
+plt.xlim([0, T])
+plt.ylim([54, 65])
+plt.xticks(np.arange(0, T + 1, 24))
+plt.yticks(np.arange(54, 66, 2))
+plt.grid(linestyle = '-.', linewidth = 0.5)
+ax.tick_params(direction = 'in')
+
+plt.savefig('freeway_traffic_speed_reconstructed_vs_true_lap_conv.pdf',
+           bbox_inches = "tight")
+plt.show()
+```
+
 **例.** 使用一维低秩拉普拉斯卷积模型对灰度图像进行复原。
 
 ```python
