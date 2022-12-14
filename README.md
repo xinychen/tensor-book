@@ -172,8 +172,223 @@ print(Y[:, :, 1])
 print()
 ```
 
-<h2 align="center">低秩时序模型</h2>
+<h2 align="center">低秩时序矩阵模型</h2>
 <p align="right"><a href="#从线性代数到张量分解"><sup>▴ 回到顶部</sup></a></p>
+
+**例.** 使用时序矩阵分解对流体流动的动态过程进行预测。
+
+```python
+import numpy as np
+import seaborn as sns
+import scipy.io
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap, LinearSegmentedColormap
+color = scipy.io.loadmat('CCcool.mat')
+cc = color['CC']
+newcmp = LinearSegmentedColormap.from_list('', cc)
+
+dense_tensor = np.load('tensor.npz')['arr_0']
+np.random.seed(1)
+dense_tensor = dense_tensor[:, :, : 150]
+M, N, T = dense_tensor.shape
+
+plt.rcParams['font.size'] = 13
+plt.rcParams['mathtext.fontset'] = 'cm'
+fig = plt.figure(figsize = (7, 8))
+id = np.array([5, 10, 15, 20, 25, 30, 35, 40])
+for t in range(8):
+    ax = fig.add_subplot(4, 2, t + 1)
+    ax = sns.heatmap(dense_tensor[:, :, id[t] - 1], cmap = newcmp, vmin = -5, vmax = 5, cbar = False)
+    ax.contour(np.linspace(0, N, N), np.linspace(0, M, M), dense_tensor[:, :, id[t] - 1], 
+               levels = np.linspace(0.15, 15, 30), colors = 'k', linewidths = 0.7)
+    ax.contour(np.linspace(0, N, N), np.linspace(0, M, M), dense_tensor[:, :, id[t] - 1], 
+               levels = np.linspace(-15, -0.15, 30), colors = 'k', linestyles = 'dashed', linewidths = 0.7)
+    plt.xticks([])
+    plt.yticks([])
+    plt.title(r'$t = {}$'.format(id[t]))
+    for _, spine in ax.spines.items():
+        spine.set_visible(True)
+plt.show()
+fig.savefig("fluid_flow_heatmap.png", bbox_inches = "tight")
+```
+
+```python
+import numpy as np
+
+def update_cg(var, r, q, Aq, rold):
+    alpha = rold / np.inner(q, Aq)
+    var = var + alpha * q
+    r = r - alpha * Aq
+    rnew = np.inner(r, r)
+    q = r + (rnew / rold) * q
+    return var, r, q, rnew
+
+def ell_w(ind, W, X, rho):
+    return X @ ((W.T @ X) * ind).T + rho * W
+
+def conj_grad_w(sparse_mat, ind, W, X, rho, maxiter = 5):
+    rank, dim1 = W.shape
+    w = np.reshape(W, -1, order = 'F')
+    r = np.reshape(X @ sparse_mat.T - ell_w(ind, W, X, rho), -1, order = 'F')
+    q = r.copy()
+    rold = np.inner(r, r)
+    for it in range(maxiter):
+        Q = np.reshape(q, (rank, dim1), order = 'F')
+        Aq = np.reshape(ell_w(ind, Q, X, rho), -1, order = 'F')
+        w, r, q, rold = update_cg(w, r, q, Aq, rold)
+    return np.reshape(w, (rank, dim1), order = 'F')
+
+def ell_x(ind, W, X, A, Psi, d, lambda0, rho):
+    rank, dim2 = X.shape
+    temp = np.zeros((d * rank, Psi[0].shape[0]))
+    for k in range(1, d + 1):
+        temp[(k - 1) * rank : k * rank, :] = X @ Psi[k].T
+    temp1 = X @ Psi[0].T - A @ temp
+    temp2 = np.zeros((rank, dim2))
+    for k in range(d):
+        temp2 += A[:, k * rank : (k + 1) * rank].T @ temp1 @ Psi[k + 1]
+    return W @ ((W.T @ X) * ind) + rho * X + lambda0 * (temp1 @ Psi[0] - temp2)
+
+def conj_grad_x(sparse_mat, ind, W, X, A, Psi, d, lambda0, rho, maxiter = 5):
+    rank, dim2 = X.shape
+    x = np.reshape(X, -1, order = 'F')
+    r = np.reshape(W @ sparse_mat - ell_x(ind, W, X, A, Psi, d, lambda0, rho), -1, order = 'F')
+    q = r.copy()
+    rold = np.inner(r, r)
+    for it in range(maxiter):
+        Q = np.reshape(q, (rank, dim2), order = 'F')
+        Aq = np.reshape(ell_x(ind, W, Q, A, Psi, d, lambda0, rho), -1, order = 'F')
+        x, r, q, rold = update_cg(x, r, q, Aq, rold)
+    return np.reshape(x, (rank, dim2), order = 'F')
+
+def generate_Psi(T, d):
+    Psi = []
+    for k in range(0, d + 1):
+        if k == 0:
+            Psi.append(np.append(np.zeros((T - d, d)), np.eye(T - d), axis = 1))
+        else:
+            Psi.append(np.append(np.append(np.zeros((T - d, d - k)), np.eye(T - d), axis = 1), 
+                                 np.zeros((T - d, k)), axis = 1))
+    return Psi
+
+def tmf(sparse_mat, rank, d, lambda0, rho, maxiter = 50):
+    dim1, dim2 = sparse_mat.shape
+    ind = sparse_mat != 0
+    W = 0.01 * np.random.randn(rank, dim1)
+    X = 0.01 * np.random.randn(rank, dim2)
+    A = 0.01 * np.random.randn(rank, d * rank)
+    Psi = generate_Psi(dim2, d)
+    temp = np.zeros((d * rank, dim2 - d))
+    for it in range(maxiter):
+        W = conj_grad_w(sparse_mat, ind, W, X, rho)
+        X = conj_grad_x(sparse_mat, ind, W, X, A, Psi, d, lambda0, rho)
+        for k in range(1, d + 1):
+            temp[(k - 1) * rank : k * rank, :] = X @ Psi[k].T
+        A = X @ Psi[0].T @ np.linalg.pinv(temp)
+        mat_hat = W.T @ X
+    return mat_hat, W, X, A
+
+def var4cast(X, A, d, delta):
+    dim1, dim2 = X.shape
+    X_hat = np.append(X, np.zeros((dim1, delta)), axis = 1)
+    for t in range(delta):
+        X_hat[:, dim2 + t] = A @ X_hat[:, dim2 + t - np.arange(1, d + 1)].T.reshape(dim1 * d)
+    return X_hat[:, - delta :]
+```
+
+```python
+import numpy as np
+np.random.seed(1)
+
+dense_tensor = np.load('tensor.npz')['arr_0']
+dense_tensor = dense_tensor[:, :, : 150]
+M, N, T = dense_tensor.shape
+dense_mat = np.reshape(dense_tensor, (M * N, T), order = 'F')
+p = 0.5
+sparse_mat = dense_mat * np.round(np.random.rand(M * N, T) + 0.5 - p)
+
+import time
+start = time.time()
+delta = 3
+rank = 10
+d = 1
+lambda0 = 1
+rho = 1
+_, W, X, A = tmf(sparse_mat[:, : T - delta], rank, d, lambda0, rho)
+mat_hat = W.T @ var4cast(X, A, d, delta)
+end = time.time()
+print('Running time: %d seconds'%(end - start))
+```
+
+```python
+import seaborn as sns
+import scipy.io
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap, LinearSegmentedColormap
+color = scipy.io.loadmat('CCcool.mat')
+cc = color['CC']
+newcmp = LinearSegmentedColormap.from_list('', cc)
+
+plt.rcParams['font.size'] = 13
+plt.rcParams['mathtext.fontset'] = 'cm'
+fig = plt.figure(figsize = (11, 1.8))
+i = 1
+for t in [147, 148, 149]:
+    ax = fig.add_subplot(1, 3, i)
+    ax = sns.heatmap(dense_mat[:, t].reshape((199, 449), order = 'F'), 
+                     cmap = newcmp, vmin = -5, vmax = 5, cbar = False)
+    ax.contour(np.linspace(0, N, N), np.linspace(0, M, M), 
+               dense_mat[:, t].reshape((199, 449), order = 'F'), 
+               levels = np.linspace(0.15, 15, 30), colors = 'k', 
+               linewidths = 0.7)
+    ax.contour(np.linspace(0, N, N), np.linspace(0, M, M), 
+               dense_mat[:, t].reshape((199, 449), order = 'F'), 
+               levels = np.linspace(-15, -0.15, 30), colors = 'k', 
+               linestyles = 'dashed', linewidths = 0.7)
+    plt.title(r'$t = {}$'.format(t + 1))
+    plt.xticks([])
+    plt.yticks([])
+    for _, spine in ax.spines.items():
+        spine.set_visible(True)
+    i += 1
+plt.show()
+fig.savefig("fluid_flow_ground_truth.png", bbox_inches = "tight")
+```
+
+```python
+import seaborn as sns
+import scipy.io
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap, LinearSegmentedColormap
+color = scipy.io.loadmat('CCcool.mat')
+cc = color['CC']
+newcmp = LinearSegmentedColormap.from_list('', cc)
+
+plt.rcParams['font.size'] = 13
+plt.rcParams['mathtext.fontset'] = 'cm'
+fig = plt.figure(figsize = (11, 1.8))
+i = 1
+for t in range(3):
+    ax = fig.add_subplot(1, 3, i)
+    ax = sns.heatmap(mat_hat[:, t].reshape((199, 449), order = 'F'), 
+                     cmap = newcmp, vmin = -5, vmax = 5, cbar = False)
+    ax.contour(np.linspace(0, N, N), np.linspace(0, M, M), 
+               mat_hat[:, t].reshape((199, 449), order = 'F'), 
+               levels = np.linspace(0.15, 15, 30), colors = 'k', 
+               linewidths = 0.7)
+    ax.contour(np.linspace(0, N, N), np.linspace(0, M, M), 
+               mat_hat[:, t].reshape((199, 449), order = 'F'), 
+               levels = np.linspace(-15, -0.15, 30), colors = 'k', 
+               linestyles = 'dashed', linewidths = 0.7)
+    plt.title(r'$t = {}$'.format(148+ t))
+    plt.xticks([])
+    plt.yticks([])
+    for _, spine in ax.spines.items():
+        spine.set_visible(True)
+    i += 1
+plt.show()
+fig.savefig("fluid_flow_forecasts.png", bbox_inches = "tight")
+```
 
 **例.** 使用考虑平滑处理的矩阵分解对灰度图像进行复原。
 
