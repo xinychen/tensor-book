@@ -672,6 +672,36 @@ pad_K[: K.shape[0], : K.shape[1]] = K
 Y = np.fft.ifft2(np.fft.fft2(X) * np.fft.fft2(pad_K)).real
 ```
 
+**例.** 对循环矩阵核范数最小化问题进行求解。
+
+```python
+import numpy as np
+
+z = np.array([0, 1, 2, 3, 4])
+lmbda = 2
+T = z.shape[0]
+
+h_hat = np.fft.fft(z)
+print('h_hat = ')
+print(h_hat)
+print()
+h_hat_abs = np.abs(h_hat)
+print('h_hat_abs = ')
+print(h_hat_abs)
+print()
+
+temp = h_hat_abs - T / lmbda
+temp[temp <= 0] = 0
+x = np.fft.ifft(h_hat / h_hat_abs * temp).real
+print('x = ')
+print(x)
+print()
+print('The objective function is: ')
+print(np.sum(np.abs(np.fft.fft(x))) 
+      + 0.5 * lmbda * np.linalg.norm(x - z, 2) ** 2)
+print()
+```
+
 **例.** 使用循环矩阵核范数最小化算法对灰度图像进行复原。
 
 ```python
