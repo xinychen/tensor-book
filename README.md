@@ -1,4 +1,4 @@
-# 从线性代数到张量分解
+# 从线性代数到张量计算
 
 [![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](https://opensource.org/licenses/MIT)
 ![Python 3.7](https://img.shields.io/badge/Python-3.7-blue.svg)
