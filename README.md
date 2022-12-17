@@ -1055,10 +1055,10 @@ def laplacian(T, tau):
         ell[-k - 1] = -1
     return ell
 
-def prox(z, w, lmbda, denominator):
-    T = z.shape[0]
+def prox_2d(z, w, lmbda, denominator):
+    M, N = z.shape
     temp = np.fft.fft2(lmbda * z - w) / denominator
-    temp1 = 1 - T / (lmbda * np.abs(temp))
+    temp1 = 1 - M * N / (lmbda * np.abs(temp))
     temp1[temp1 <= 0] = 0
     return np.fft.ifft2(temp * temp1).real
 
@@ -1085,7 +1085,7 @@ def laplacian_conv_2d(y_true, y, lmbda, gamma, eta, tau, maxiter = 50):
     del y_true, y
     show_iter = 10
     for it in range(maxiter):
-        x = prox(z, w, lmbda, denominator)
+        x = prox_2d(z, w, lmbda, denominator)
         z = update_z(y_train, pos_train, x, w, lmbda, eta)
         w = update_w(x, z, w, lmbda)
         if (it + 1) % show_iter == 0:
@@ -1116,7 +1116,7 @@ plt.show()
 ```
 
 ```python
-lmbda = 1e-4 * M * N
+lmbda = 5e-3 * M * N
 gamma = 1 * lmbda
 eta = 100 * lmbda
 tau = 2
