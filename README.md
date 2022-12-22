@@ -672,6 +672,20 @@ pad_K[: K.shape[0], : K.shape[1]] = K
 Y = np.fft.ifft2(np.fft.fft2(X) * np.fft.fft2(pad_K)).real
 ```
 
+**例.** 计算矩阵的F范数与傅立叶变换的F范数。
+
+```python
+import numpy as np
+
+X = np.array([[5, 6, 7], [8, 9, 10]])
+print('The squared Frobenius norm of the matrix X:')
+print(np.linalg.norm(X, 'fro') ** 2)
+print()
+print('The squared Frobenius norm of the matrix Fx:')
+print(np.linalg.norm(np.fft.fft2(X), 'fro') ** 2)
+print()
+```
+
 **例.** 计算循环矩阵的奇异值与L1范数。
 
 ```python
