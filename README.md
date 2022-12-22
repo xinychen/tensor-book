@@ -672,6 +672,30 @@ pad_K[: K.shape[0], : K.shape[1]] = K
 Y = np.fft.ifft2(np.fft.fft2(X) * np.fft.fft2(pad_K)).real
 ```
 
+**例.** 计算循环矩阵的奇异值与L1范数。
+
+```python
+import numpy as np
+
+def circ_mat(vec):
+    n = vec.shape[0]
+    mat = np.zeros((n, n))
+    mat[:, 0] = vec
+    for k in range(1, n):
+        mat[:, k] = np.append(vec[n - k :], vec[: n - k], axis = 0)
+    return mat
+
+x = np.array([0, 1, 2, 3, 4])
+Cx = circ_mat(x)
+s = np.linalg.svd(Cx, full_matrices = False, compute_uv = False)
+print('Singular values of the circulant matrix Cx:')
+print(s)
+print()
+print('Discrete Fourier transform of the vector x:')
+print(np.fft.fft(x))
+print()
+```
+
 **例.** 对循环矩阵核范数最小化问题进行求解。
 
 ```python
