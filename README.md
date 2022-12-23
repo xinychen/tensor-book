@@ -1198,3 +1198,43 @@ x_hat = x_hat / kernel_size
 print(x_hat)
 ```
 
+或者
+```python
+import numpy as np
+
+def CircularConv(x, kernel):
+    m = x.shape[0]
+    n = kernel.shape[0]
+    vec = np.zeros(m)
+    for t in range(m):
+        temp = 0
+        for k in range(n):
+            temp += x[t - k] * kernel[k]
+        vec[t] = temp
+    return vec
+
+def DelayEmbedding(vec, kernel_size):
+    n = vec.shape[0]
+    mat = np.zeros((n, kernel_size))
+    mat[:, 0] = vec
+    for k in range(1, kernel_size):
+        mat[:, k] = np.append(vec[k :], vec[: k], axis = 0)
+    return mat
+
+x = np.array([0, 1, 2, 3, 4])
+kernel_size = 3
+mat = DelayEmbedding(x, kernel_size)
+u, s, v = np.linalg.svd(mat, full_matrices = False)
+temp1 = s[0] * CircularConv(u[:, 0], v[0, :]) / 3
+print(temp1)
+print()
+temp2 = s[1] * CircularConv(u[:, 1], v[1, :]) / 3
+print(temp2)
+print()
+temp3 = s[2] * CircularConv(u[:, 2], v[2, :]) / 3
+print(temp3)
+print()
+print(temp1 + temp2 + temp3)
+print()
+```
+
