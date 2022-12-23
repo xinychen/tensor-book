@@ -1238,3 +1238,45 @@ print(temp1 + temp2 + temp3)
 print()
 ```
 
+<h2 align="center">核范数最小化问题</h2>
+<p align="right"><a href="#从线性代数到张量分解"><sup>▴ 回到顶部</sup></a></p>
+
+
+```python
+import numpy as np
+
+def circ_mat(vec):
+    n = vec.shape[0]
+    mat = np.zeros((n, n))
+    mat[:, 0] = vec
+    for k in range(1, n):
+        mat[:, k] = np.append(vec[n - k :], vec[: n - k], axis = 0)
+    return mat
+
+def inv_circ_mat(mat):
+    n = mat.shape[0]
+    vec = mat[:, 0]
+    for k in range(1, n):
+        vec += np.append(mat[k :, k], mat[: k, k], axis = 0)
+    return vec / n
+
+z = np.array([0, 1, 2, 3, 4])
+T = z.shape[0]
+lmbda = 2
+mat = circ_mat(z)
+u, s, v = np.linalg.svd(mat, full_matrices = False)
+s = s - T / lmbda
+s[s < 0] = 0
+temp = u @ np.diag(s) @ v
+print('The result of singular value thresholding:')
+print(temp)
+print()
+print('The inverse operator of the matrix:')
+x = inv_circ_mat(temp)
+print(x)
+print()
+print('The objective function is: ')
+print(np.sum(np.abs(np.fft.fft(x))) 
+      + 0.5 * lmbda * np.linalg.norm(x - z, 2) ** 2)
+print()
+```
