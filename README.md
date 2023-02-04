@@ -1280,3 +1280,21 @@ print(np.sum(np.abs(np.fft.fft(x)))
       + 0.5 * lmbda * np.linalg.norm(x - z, 2) ** 2)
 print()
 ```
+
+```python
+def conv_mat(vec, kernel_size):
+    n = vec.shape[0]
+    mat = np.zeros((n, kernel_size))
+    mat[:, 0] = vec
+    for k in range(1, kernel_size):
+        mat[:, k] = np.append(vec[n - k :], vec[: n - k], axis = 0)
+    return mat
+
+def inv_conv_mat(mat):
+    tau = mat.shape[1]
+    vec = mat[:, 0]
+    for k in range(1, tau):
+        vec += np.append(mat[k :, k], mat[: k, k], axis = 0)
+    return vec / tau
+```
+
