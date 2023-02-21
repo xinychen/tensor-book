@@ -6,21 +6,22 @@
 
 <h6 align="center">Made by Xinyu Chen (陈新宇) • :globe_with_meridians: <a href="https://xinychen.github.io">https://xinychen.github.io</a></h6>
 
-## 目录
+<br>
 
-- **Kronecker积与Kronecker分解**
-  - Kronecker积定义
-  - Kronecker积基本性质
-  - Kronecker积特殊性质
-  - 朴素Kronecker积分解
-  - 广义Kronecker积分解
-  - 模型参数压缩问题
+## 系列教程
+
+1. [《从线性代数到张量计算》(PDF)](https://xinychen.github.io/books/tensor_book.pdf)
+2. [《面向时空交通数据修复及预测的低秩机器学习模型》(PDF)](https://xinychen.github.io/books/spatiotemporal_low_rank_models.pdf)
+
+<br>
 
 ## 作者申明
 
 - 撰写本文的初衷在于传播知识，为感兴趣的读者提供参考素材。
 - 禁止将本文放在其他网站上，唯一下载网址为[https://xinychen.github.io/books/tensor_book.pdf](https://xinychen.github.io/books/tensor_book.pdf)。
 - 禁止将本文用于任何形式的商业活动。
+
+<br>
 
 <h2 align="center">代数结构</h2>
 <p align="right"><a href="#从线性代数到张量分解"><sup>▴ 回到顶部</sup></a></p>
