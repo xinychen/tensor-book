@@ -21,9 +21,9 @@
 
 ## 作者申明
 
-- 撰写本文的初衷在于传播知识，为感兴趣的读者提供参考素材。
-- 禁止将本文放在其他网站上，唯一下载网址为[https://xinychen.github.io/books/tensor_book.pdf](https://xinychen.github.io/books/tensor_book.pdf)。
-- 禁止将本文用于任何形式的商业活动。
+- 撰写该系列教程的初衷在于传播知识、丰富中文科技文库，为感兴趣的读者提供参考素材。
+- 禁止将该系列教程放在其他网站上，唯一下载网址为[https://xinychen.github.io](https://xinychen.github.io)。
+- 禁止将该系列教程用于任何形式的商业活动。
 
 <br>
 
