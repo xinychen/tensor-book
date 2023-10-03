@@ -1,4 +1,4 @@
-# 从线性代数到张量计算
+# 张量计算系列教程
 
 [![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](https://opensource.org/licenses/MIT)
 ![Python 3.7](https://img.shields.io/badge/Python-3.7-blue.svg)
@@ -11,7 +11,7 @@
 ## 系列教程
 
 1. [《从线性代数到张量计算》(PDF)](https://xinychen.github.io/books/tensor_book.pdf)
-2. [《面向时空交通数据修复及预测的低秩机器学习模型》(PDF)](https://xinychen.github.io/books/spatiotemporal_low_rank_models.pdf)
+2. [《面向时空交通数据修复及预测的低秩机器学习模型》(PDF，已更新超过100页)](https://xinychen.github.io/books/spatiotemporal_low_rank_models.pdf)
 
 <br>
 
