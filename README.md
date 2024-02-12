@@ -10,7 +10,7 @@
 ## 系列教程
 
 1. [《从线性代数到张量计算》(PDF)](https://xinychen.github.io/books/tensor_book.pdf)
-2. [《**面向时空交通数据修复及预测的低秩机器学习模型**》(PDF, 已更新超过100页)](https://xinychen.github.io/books/spatiotemporal_low_rank_models.pdf)
+2. [《**机器学习与时空数据建模**》(PDF, 已更新超过100页)](https://xinychen.github.io/books/spatiotemporal_low_rank_models.pdf)
 
 <br>
 
